@@ -771,6 +771,11 @@ void gpgpu_sim_config::reg_options(option_parser_t opp) {
                          &(gpgpu_ctx->device_runtime->g_TB_launch_latency),
                          "thread block launch latency in cycles. Default: 0",
                          "0");
+
+  // UNT: constant delay for NCCL operations. 
+  option_parser_register(opp, "-nccl_allreduce_latency", OPT_INT32, 
+                         &nccl_allreduce_latency, "Number of cycles NCCL All "
+                         "Reduce takes. Default: 100 cycles.", "100"); 
 }
 
 /////////////////////////////////////////////////////////////////////////////

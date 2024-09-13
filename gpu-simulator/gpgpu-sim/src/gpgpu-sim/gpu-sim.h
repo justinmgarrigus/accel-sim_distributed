@@ -407,6 +407,10 @@ class gpgpu_sim_config : public power_config,
     return runtime_pending_launch_count_limit;
   }
 
+  unsigned int get_nccl_allreduce_latency() const { 
+    return nccl_allreduce_latency; 
+  } 
+  
   bool flush_l1() const { return gpgpu_flush_l1_cache; }
 
  private:
@@ -460,6 +464,9 @@ class gpgpu_sim_config : public power_config,
   unsigned int gpgpu_compute_capability_major;
   unsigned int gpgpu_compute_capability_minor;
   unsigned long long liveness_message_freq;
+  
+  // UNT: NCCL latency 
+  unsigned int nccl_allreduce_latency; 
 
   friend class gpgpu_sim;
 };
