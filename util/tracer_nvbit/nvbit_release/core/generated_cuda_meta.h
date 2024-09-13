@@ -2732,6 +2732,26 @@ typedef struct cuLaunchKernel_params_st {
     void **extra;
 } cuLaunchKernel_params;
 
+typedef struct CUlaunchConfig_st {                                       
+    unsigned int gridDimX;                                               
+    unsigned int gridDimY;                                               
+    unsigned int gridDimZ;                                               
+    unsigned int blockDimX;                                              
+    unsigned int blockDimY;                                              
+    unsigned int blockDimZ;                                              
+    unsigned int sharedMemBytes;                                         
+    CUstream hStream;                                                    
+    void *attrs;                                                         
+    unsigned int numAttrs;                                               
+} CUlaunchConfig;                                                        
+                                                                                
+typedef struct cuLaunchKernelEx_params_st {                                     
+    const CUlaunchConfig* config;                                               
+    CUfunction f;                                                               
+    void **kernelParams;                                                        
+    void **extra;                                                               
+} cuLaunchKernelEx_params;
+
 typedef struct cuLaunchHostFunc_params_st {
     CUstream hStream;
     CUhostFn fn;
