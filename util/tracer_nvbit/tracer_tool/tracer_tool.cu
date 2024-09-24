@@ -302,6 +302,7 @@ int counter = 0;
 void nvbit_at_cuda_event(CUcontext ctx, int is_exit, nvbit_api_cuda_t cbid,
                          const char *name, void *params, CUresult *pStatus) {
   int local_counter = counter;
+  printf("- nvbit_at_cuda_event(%s, %d)\n", name, local_counter); 
   if (gpu_trace_id != -1) { 
     if (cbid == API_CUDA_cuCtxGetDevice)
       // We'll be calling this a lot if we're trying to only obtain traces for 
