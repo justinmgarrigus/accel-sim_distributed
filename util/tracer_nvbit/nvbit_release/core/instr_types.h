@@ -28,6 +28,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <unordered_map>
 
 namespace InstrType {
 
@@ -95,7 +96,7 @@ typedef struct {
     /* operand type */
     OperandType type;
     /* operand string */
-    char str[MAX_CHARS];
+    std::string str;
     /* is negative */
     bool is_neg;
     /* is not */

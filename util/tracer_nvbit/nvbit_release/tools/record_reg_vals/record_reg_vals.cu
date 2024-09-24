@@ -131,9 +131,7 @@ void instrument_function_if_needed(CUcontext ctx, CUfunction func) {
                 /* get the operand "i" */
                 const InstrType::operand_t *op = instr->getOperand(i);
                 if (op->type == InstrType::OperandType::REG) {
-                    for (int reg_idx = 0; reg_idx < instr->getSize() / 4; reg_idx++) {
-                        reg_num_list.push_back(op->u.reg.num + reg_idx);
-                    }
+                    reg_num_list.push_back(op->u.reg.num);
                 }
             }
             /* insert call to the instrumentation function with its

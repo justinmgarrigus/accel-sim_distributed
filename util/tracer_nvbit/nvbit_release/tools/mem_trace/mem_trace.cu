@@ -33,7 +33,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
-#include <unordered_map>
 
 /* every tool needs to include this once */
 #include "nvbit_tool.h"
