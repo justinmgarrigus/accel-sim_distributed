@@ -133,7 +133,6 @@ int main(int argc, const char **argv) {
       std::cout << "ncclGroupEnd was run!" << std::endl; 
       i++; 
     } else if (kernels_info.empty())
-    else if (kernels_info.empty())
     	assert(0 && "Undefined Command");
 
     bool active = false;
@@ -181,7 +180,7 @@ int main(int argc, const char **argv) {
         }
       }
       assert(k);
-      m_gpgpu_sim->print_stats();
+      m_gpgpu_sim->print_stats(0);
     }
 
     if (sim_cycles) {
