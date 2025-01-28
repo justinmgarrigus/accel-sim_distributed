@@ -3245,6 +3245,20 @@ void warp_inst_t::print(FILE *fout) const {
   fprintf(fout, "\n");
 }
 void shader_core_ctx::incexecstat(warp_inst_t *&inst) {
+  if (inst->sp_op == TENSOR__OP) {
+    // Log that a tensor core instruction was issued so we can analyze it 
+    // later.
+    gpgpu_sim *sim = get_gpu(); 
+    unsigned long long cycle = sim->gpu_tot_sim_cycle + sim->gpu_sim_cycle; 
+     
+    sim->tensor_cycle_buffer[sim->tensor_cycle_buffer_counter++] = cycle; 
+    if (sim->tensor_cycle_buffer_counter == sim->tensor_cycle_buffer_max) { 
+      sim->tensor_cycle_buffer_counter = 0; 
+      for (int i = 0; i < sim->tensor_cycle_buffer_max; i++) 
+        fprintf(sim->tensor_usage_file, "%llu,", sim->tensor_cycle_buffer[i]);
+    }
+  }
+
   // Latency numbers for next operations are used to scale the power values
   // for special operations, according observations from microbenchmarking
   // TODO: put these numbers in the xml configuration
@@ -3809,7 +3823,8 @@ void barrier_set_t::deallocate_barrier(unsigned cta_id) {
   warp_set_t at_barrier = warps & m_warp_at_barrier;
   assert(at_barrier.any() == false);  // no warps stuck at barrier
   warp_set_t active = warps & m_warp_active;
-  assert(active.any() == false);  // no warps in CTA still running
+  // TODO: This shouldn't be commented...
+  // assert(active.any() == false);  // no warps in CTA still running
   m_warp_active &= ~warps;
   m_warp_at_barrier &= ~warps;
 

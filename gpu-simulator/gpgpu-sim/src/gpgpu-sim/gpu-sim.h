@@ -407,10 +407,6 @@ class gpgpu_sim_config : public power_config,
     return runtime_pending_launch_count_limit;
   }
 
-  unsigned int get_nccl_allreduce_latency() const { 
-    return nccl_allreduce_latency; 
-  } 
-  
   bool flush_l1() const { return gpgpu_flush_l1_cache; }
 
  private:
@@ -464,9 +460,6 @@ class gpgpu_sim_config : public power_config,
   unsigned int gpgpu_compute_capability_major;
   unsigned int gpgpu_compute_capability_minor;
   unsigned long long liveness_message_freq;
-  
-  // UNT: NCCL latency 
-  unsigned int nccl_allreduce_latency; 
 
   friend class gpgpu_sim;
 };
@@ -743,6 +736,27 @@ class gpgpu_sim : public gpgpu_t {
     m_functional_sim = false;
     m_functional_sim_kernel = NULL;
   }
+
+  // Justin: occupancy stats
+  FILE *warp_occupancy_file = NULL; 
+  float *average_warp_occupancy_buffer = NULL;
+  int average_warp_occupancy_buffer_counter = 0;
+  const int average_warp_occupancy_buffer_max = 1024;
+
+  FILE *sm_occupancy_file = NULL; 
+  float *percent_sm_buffer = NULL;
+  int percent_sm_buffer_counter = 0; 
+  const int percent_sm_buffer_max = 1024; 
+
+  FILE *tensor_usage_file = NULL; 
+  unsigned long long *tensor_cycle_buffer = NULL; 
+  int tensor_cycle_buffer_counter = 0; 
+  const int tensor_cycle_buffer_max = 1024;
+
+  FILE *dram_access_file = NULL; 
+  unsigned long long *dram_access_buffer = NULL; 
+  int dram_access_buffer_counter = 0; 
+  const int dram_access_buffer_max = 1024; 
 };
 
 class exec_gpgpu_sim : public gpgpu_sim {

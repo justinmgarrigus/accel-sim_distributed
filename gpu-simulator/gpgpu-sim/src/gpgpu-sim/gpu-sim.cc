@@ -771,11 +771,6 @@ void gpgpu_sim_config::reg_options(option_parser_t opp) {
                          &(gpgpu_ctx->device_runtime->g_TB_launch_latency),
                          "thread block launch latency in cycles. Default: 0",
                          "0");
-
-  // UNT: constant delay for NCCL operations. 
-  option_parser_register(opp, "-nccl_allreduce_latency", OPT_INT32, 
-                         &nccl_allreduce_latency, "Number of cycles NCCL All "
-                         "Reduce takes. Default: 100 cycles.", "100"); 
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -920,6 +915,7 @@ unsigned gpgpu_sim::finished_kernel() {
   }
   unsigned result = m_finished_kernel.front();
   m_finished_kernel.pop_front();
+
   return result;
 }
 
@@ -2007,10 +2003,12 @@ void gpgpu_sim::cycle() {
   if (clock_mask & ICNT) {
     icnt_transfer();
   }
-
+	
   if (clock_mask & CORE) {
     // L1 cache + shader core pipeline stages
     m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX].clear();
+    float warp_occupancy_total = 0; 
+    float sm_occupancy_total = 0; 
     for (unsigned i = 0; i < m_shader_config->n_simt_clusters; i++) {
       if (m_cluster[i]->get_not_completed() || get_more_cta_left()) {
         m_cluster[i]->core_cycle();
@@ -2027,7 +2025,63 @@ void gpgpu_sim::cycle() {
             gpu_occupancy.aggregate_warp_slot_filled,
             gpu_occupancy.aggregate_theoretical_warp_slots);
       }
+
+      float result = m_cluster[i]->get_current_occupancy(
+          gpu_occupancy.aggregate_warp_slot_filled,
+          gpu_occupancy.aggregate_theoretical_warp_slots);
+      warp_occupancy_total += result;
+
+      sm_occupancy_total += (m_cluster[i]->get_n_active_sms() / 
+        m_shader_config->n_simt_cores_per_cluster);
     }
+
+    // Warp utilization 
+    float warp_occupancy_average = warp_occupancy_total / 
+      m_shader_config->n_simt_clusters; 
+    average_warp_occupancy_buffer[average_warp_occupancy_buffer_counter++] = 
+      warp_occupancy_average; 
+    if (average_warp_occupancy_buffer_counter == 
+        average_warp_occupancy_buffer_max) 
+    {
+      average_warp_occupancy_buffer_counter = 0; 
+      for (int i = 0; i < average_warp_occupancy_buffer_max; i++) 
+        fprintf(warp_occupancy_file, "%f,", average_warp_occupancy_buffer[i]);
+    }
+
+    // SM utilization  
+    float sm_occupancy_average = sm_occupancy_total / 
+      m_shader_config->n_simt_clusters; 
+    percent_sm_buffer[percent_sm_buffer_counter++] = sm_occupancy_average; 
+    if (percent_sm_buffer_counter == percent_sm_buffer_max) 
+    {
+      percent_sm_buffer_counter = 0; 
+      for (int i = 0; i < percent_sm_buffer_max; i++) 
+        fprintf(sm_occupancy_file, "%f,", percent_sm_buffer[i]);
+    }
+
+    // DRAM utilization
+    unsigned long long total_accesses = 0; 
+    for (int i = 0; i < m_memory_config->m_n_mem; i++) {
+      for (int j = 0; 
+        j < m_memory_config->m_n_sub_partition_per_memory_channel; 
+        j++)
+      { 
+        /* 
+        total_accesses += m_memory_partition_unit[i]
+          ->get_sub_partition(j)
+          ->m_stats
+          ->total_n_access;
+        */
+      }
+      total_accesses += m_memory_stats->total_n_access; 
+    }
+    dram_access_buffer[dram_access_buffer_counter++] = total_accesses; 
+    if (dram_access_buffer_counter == dram_access_buffer_max) {
+      dram_access_buffer_counter = 0; 
+      for (int i = 0; i < dram_access_buffer_max; i++) 
+        fprintf(dram_access_file, "%llu,", dram_access_buffer[i]); 
+    }
+    
     float temp = 0;
     for (unsigned i = 0; i < m_shader_config->num_shader(); i++) {
       temp += m_shader_stats->m_pipeline_duty_cycle[i];

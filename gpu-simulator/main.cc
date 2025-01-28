@@ -65,6 +65,21 @@ int main(int argc, const char **argv) {
 
   tconfig.parse_config();
 
+  // Justin: global stats across kernel runs. 
+  m_gpgpu_sim->warp_occupancy_file = fopen("warp_occupancy_stats.dat", "w"); 
+  m_gpgpu_sim->average_warp_occupancy_buffer = 
+    new float[m_gpgpu_sim->average_warp_occupancy_buffer_max]; 
+  m_gpgpu_sim->tensor_usage_file = fopen("tensor_cycle_stats.dat", "w"); 
+  m_gpgpu_sim->tensor_cycle_buffer = 
+    new unsigned long long int[m_gpgpu_sim->tensor_cycle_buffer_max];
+  m_gpgpu_sim->sm_occupancy_file = fopen("sm_occupancy_stats.dat", "w"); 
+  m_gpgpu_sim->percent_sm_buffer = 
+    new float[m_gpgpu_sim->percent_sm_buffer_max]; 
+  m_gpgpu_sim->dram_access_file = fopen("dram_access_stats.dat", "w"); 
+  m_gpgpu_sim->dram_access_buffer = 
+    new unsigned long long int[m_gpgpu_sim->dram_access_buffer_max]; 
+  FILE *kernel_time_file = fopen("kernel_time_stats.dat", "w"); 
+
   // for each kernel
   // load file
   // parse and create kernel info
@@ -108,12 +123,14 @@ int main(int argc, const char **argv) {
         }
         if (!stream_busy && m_gpgpu_sim->can_start_kernel() && !k->was_launched()) {
           std::cout << "launching kernel name: " << k->get_name() << " uid: " << k->get_uid() << std::endl;
+          std::cerr << "launching kernel name: " << k->get_name() << " uid: " << k->get_uid() << std::endl;
+          fprintf(kernel_time_file, "%s,%llu,", k->get_name().c_str(), m_gpgpu_sim->gpu_tot_sim_cycle); 
           m_gpgpu_sim->launch(k);
           k->set_launched();
           busy_streams.push_back(k->get_cuda_stream_id());
         }
       }
-    } else if (commandlist[i].m_type == command_type::ncclAllReduce) {
+    } /* else if (commandlist[i].m_type == command_type::ncclAllReduce) {
       unsigned int latency = 
         m_gpgpu_sim->get_config().get_nccl_allreduce_latency(); 
       std::cout << "ncclAllReduce was run! Latency: " << latency << " cycles." 
@@ -132,7 +149,7 @@ int main(int argc, const char **argv) {
     } else if (commandlist[i].m_type == command_type::ncclGroupEnd) {
       std::cout << "ncclGroupEnd was run!" << std::endl; 
       i++; 
-    } else if (kernels_info.empty())
+    } */ else if (kernels_info.empty())
     	assert(0 && "Undefined Command");
 
     bool active = false;
@@ -181,6 +198,7 @@ int main(int argc, const char **argv) {
       }
       assert(k);
       m_gpgpu_sim->print_stats(0);
+      fprintf(kernel_time_file, "%llu\n", m_gpgpu_sim->gpu_tot_sim_cycle + m_gpgpu_sim->gpu_sim_cycle); 
     }
 
     if (sim_cycles) {
@@ -195,6 +213,30 @@ int main(int argc, const char **argv) {
       break;
     }
   }
+  
+  for (int i = 0; i < m_gpgpu_sim->average_warp_occupancy_buffer_counter; i++)
+    fprintf(m_gpgpu_sim->warp_occupancy_file, "%f,", m_gpgpu_sim->average_warp_occupancy_buffer[i]); 
+  fclose(m_gpgpu_sim->warp_occupancy_file); 
+  delete[] m_gpgpu_sim->average_warp_occupancy_buffer; 
+
+  for (int i = 0; i < m_gpgpu_sim->tensor_cycle_buffer_counter; i++)
+    fprintf(m_gpgpu_sim->tensor_usage_file, "%llu,", m_gpgpu_sim->tensor_cycle_buffer[i]); 
+  delete[] m_gpgpu_sim->tensor_cycle_buffer; 
+  fclose(m_gpgpu_sim->tensor_usage_file);
+
+  for (int i = 0; i < m_gpgpu_sim->percent_sm_buffer_counter; i++)
+    fprintf(m_gpgpu_sim->sm_occupancy_file, "%llu,", 
+      m_gpgpu_sim->percent_sm_buffer[i]); 
+  delete[] m_gpgpu_sim->percent_sm_buffer; 
+  fclose(m_gpgpu_sim->sm_occupancy_file);
+
+  for (int i = 0; i < m_gpgpu_sim->dram_access_buffer_counter; i++) 
+    fprintf(m_gpgpu_sim->dram_access_file, "%llu,", 
+      m_gpgpu_sim->dram_access_buffer[i]); 
+  delete[] m_gpgpu_sim->dram_access_buffer; 
+  fclose(m_gpgpu_sim->dram_access_file); 
+
+  fclose(kernel_time_file); 
 
   // we print this message to inform the gpgpu-simulation stats_collect script
   // that we are done
