@@ -2030,7 +2030,7 @@ void gpgpu_sim::cycle() {
           gpu_occupancy.aggregate_warp_slot_filled,
           gpu_occupancy.aggregate_theoretical_warp_slots);
       warp_occupancy_total += result;
-
+    
       sm_occupancy_total += (m_cluster[i]->get_n_active_sms() / 
         m_shader_config->n_simt_cores_per_cluster);
     }

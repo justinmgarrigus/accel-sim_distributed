@@ -1,5 +1,5 @@
 pyyaml
 pandas
 plotly
-kaleido
+python-kaleido
 psutil
